@@ -1,67 +1,52 @@
 from direct.showbase import DirectObject
 from direct.task import Task
+from panda3d.core import WindowProperties
 
 
 class Controls(DirectObject.DirectObject):
-	def __init__(self, app):
-		self.app = app
-		self.app.disableMouse()
-		self.app.camera.setPos(0, 50, 0)
-		self.app.camera.lookAt(0, 0, 0)
+	def __init__(self, sim):
+		self.sim = sim
 
-		self.mouseX = None
-		self.mouseY = None
+		# disable default control scheme
+		self.sim.disableMouse()
 
-		self.accept("w", self.moveCamera, ["forward"])
-		self.accept("a", self.moveCamera, ["left"])
-		self.accept("s", self.moveCamera, ["back"])
-		self.accept("d", self.moveCamera, ["right"])
+		# initialise camera position/orientation
+		self.sim.camera.setPos(0, 50, 0)
+		self.sim.camera.lookAt(0, 0, 0)
 
-		self.accept("w-up", self.stopCamera, ["forward"])
-		self.accept("a-up", self.stopCamera, ["left"])
-		self.accept("s-up", self.stopCamera, ["back"])
-		self.accept("d-up", self.stopCamera, ["right"])
+		# keyboard controls: map buttons to controls
+		buttons = {"w": (0, 1, 0), "a": (-1, 0, 0), "s": (0, -1, 0), "d": (1, 0, 0)}
+		for k, v in buttons.items():
+			self.accept(k, self.moveCamera, [v])
+			self.accept(f"{k}-up", self.stopCamera, [v])
 
-		self.accept("mouse3", self.turnCamera)
-		self.accept("mouse3-up", self.stopCamera, ["turn"])
+		# mouse controls
+		self.setMouseVisibility(False)
+		self.sim.taskMgr.add(self.turnCamera_task, "TurnCamera")
+
+	def setMouseVisibility(self, visible):
+		props = WindowProperties()
+		props.setCursorHidden(not visible)
+		self.sim.win.requestProperties(props)
 
 	def moveCamera(self, direction):
-		self.app.taskMgr.add(self.moveCamera_task, "Camera_" + direction, extraArgs=[direction])
+		self.sim.taskMgr.add(self.moveCamera_task, "Cam_" + str(direction), extraArgs=[direction])
 
 	def moveCamera_task(self, direction):
-		if direction == "forward":
-			forward = self.app.render.getRelativeVector(self.app.camera, (0, 1, 0))
-			self.app.camera.setPos(self.app.camera.getPos() + forward)
-		elif direction == "back":
-			forward = self.app.render.getRelativeVector(self.app.camera, (0, -1, 0))
-			self.app.camera.setPos(self.app.camera.getPos() + forward)
-		elif direction == "left":
-			forward = self.app.render.getRelativeVector(self.app.camera, (-1, 0, 0))
-			self.app.camera.setPos(self.app.camera.getPos() + forward)
-		elif direction == "right":
-			forward = self.app.render.getRelativeVector(self.app.camera, (1, 0, 0))
-			self.app.camera.setPos(self.app.camera.getPos() + forward)
-
-		return Task.cont
-
-	def turnCamera(self):
-		self.mouseX = self.app.mouseWatcherNode.getMouseX()
-		self.mouseY = self.app.mouseWatcherNode.getMouseY()
-		self.app.taskMgr.add(self.turnCamera_task, "Camera_turn")
-
-	def turnCamera_task(self, task):
-		x = self.app.mouseWatcherNode.getMouseX()
-		y = self.app.mouseWatcherNode.getMouseY()
-
-		dx = self.mouseX - x
-		dy = self.mouseY - y
-
-		self.app.camera.setHpr(self.app.camera.getHpr() + (dx * 30, -dy * 30, 0))
-
-		self.mouseX = x
-		self.mouseY = y
-
+		relativeDir = self.sim.render.getRelativeVector(self.sim.camera, direction)
+		self.sim.camera.setPos(self.sim.camera.getPos() + relativeDir)
 		return Task.cont
 
 	def stopCamera(self, direction):
-		self.app.taskMgr.remove("Camera_" + direction)
+		self.sim.taskMgr.remove("Cam_" + str(direction))
+
+	def turnCamera_task(self, task):
+		if self.sim.mouseWatcherNode.hasMouse():
+			x = self.sim.mouseWatcherNode.getMouseX()
+			y = self.sim.mouseWatcherNode.getMouseY()
+			self.sim.camera.setHpr(self.sim.camera.getHpr() + (-x * 30, y * 30, 0))
+
+			props = self.sim.win.getProperties()
+			self.sim.win.movePointer(0, props.getXSize() // 2, props.getYSize() // 2)
+
+		return Task.cont

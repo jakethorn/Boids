@@ -12,12 +12,12 @@ def randRot():
 
 
 class Bird:
-	def __init__(self, app):
-		self.app = app
+	def __init__(self, sim):
+		self.sim = sim
 
 		# initialise 3d model
-		self.nodePath = self.app.loader.loadModel("models/jack")
-		self.nodePath.reparentTo(app.render)
+		self.nodePath = self.sim.loader.loadModel("models/jack")
+		self.nodePath.reparentTo(self.sim.render)
 		self.nodePath.setPos(randPos(20), randPos(20), randPos(20))
 		self.nodePath.setHpr(randRot(), randRot(), randRot())
 		self.nodePath.setScale(.5, .75, .5)
@@ -30,14 +30,14 @@ class Bird:
 			self.move()
 			return Task.cont
 
-		self.app.taskMgr.add(move_task, "Move")
+		self.sim.taskMgr.add(move_task, "Move")
 
 	def getForward(self):
-		return self.app.render.getRelativeVector(self.nodePath, (0, 1, 0))
+		return self.sim.render.getRelativeVector(self.nodePath, (0, 1, 0))
 
 	def getClosestPredator(self):
-		closest = self.app.predators[0].nodePath.getPos()
-		for predator in self.app.predators:
+		closest = self.sim.predators[0].nodePath.getPos()
+		for predator in self.sim.predators:
 			closestDistance = (closest - self.nodePath.getPos()).length()
 			currentDistance = (predator.nodePath.getPos() - self.nodePath.getPos()).length()
 			if currentDistance < closestDistance:
@@ -77,7 +77,7 @@ class Bird:
 			self.targetForward = LPoint3f(randPos(5), randPos(5), randPos(5)) - self.nodePath.getPos().normalized()
 
 		# stay away from predators
-		if len(self.app.predators) > 0:
+		if len(self.sim.predators) > 0:
 			predator = self.getClosestPredator()
 			if (predator - self.nodePath.getPos()).length() < 5:
 				self.targetForward = self.getFearVector()

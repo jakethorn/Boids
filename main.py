@@ -4,7 +4,7 @@ from Predator import Predator
 from Controls import Controls
 
 
-class App(ShowBase):
+class Simulation(ShowBase):
 	def __init__(self, numBirds, numPredators):
 		super().__init__()
 
@@ -18,8 +18,9 @@ class App(ShowBase):
 		for x in range(numPredators):
 			self.predators.append(Predator(self))
 
+		# initialise keyboard/mouse controls
+		self.controls = Controls(self)
 
-app = App(100, 3)
-cnt = Controls(app)
 
-app.run()
+sim = Simulation(numBirds=100, numPredators=3)
+sim.run()
