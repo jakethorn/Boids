@@ -6,6 +6,8 @@ class Controls(DirectObject.DirectObject):
 	def __init__(self, app):
 		self.app = app
 		self.app.disableMouse()
+		self.app.camera.setPos(0, 50, 0)
+		self.app.camera.lookAt(0, 0, 0)
 
 		self.mouseX = None
 		self.mouseY = None
@@ -42,9 +44,6 @@ class Controls(DirectObject.DirectObject):
 
 		return Task.cont
 
-	def stopCamera(self, direction):
-		self.app.taskMgr.remove("Camera_" + direction)
-
 	def turnCamera(self):
 		self.mouseX = self.app.mouseWatcherNode.getMouseX()
 		self.mouseY = self.app.mouseWatcherNode.getMouseY()
@@ -63,3 +62,6 @@ class Controls(DirectObject.DirectObject):
 		self.mouseY = y
 
 		return Task.cont
+
+	def stopCamera(self, direction):
+		self.app.taskMgr.remove("Camera_" + direction)
